@@ -167,15 +167,20 @@ class DbContext extends RawMinkContext
 
     private static function assertMagentoOneUsingTestingDatabase($projectRoot, $databaseName)
     {
-        $localXml             = file_get_contents($projectRoot . self::PATH_LOCAL_XML);
-        $containsDatabaseName = preg_match("#\<dbname\>\<!\[CDATA\[$databaseName\]\]\>\</dbname\>#", $localXml);
+        $localXml = simplexml_load_file($projectRoot . self::PATH_LOCAL_XML);
 
-        if (1 === $containsDatabaseName) {
+        if (! isset($localXml->global->resources->default_setup->connection->dbname)) {
+            throw new \RuntimeException(
+                'You need to configure a dbname in your local.xml'
+            );
+        }
+
+        if ((string) $localXml->global->resources->default_setup->connection->dbname === $databaseName) {
             return;
         }
 
         throw new \InvalidArgumentException(
-            "You need to configure Magento to use the testing database '$databaseName'"
+            "You need to configure Magento to use the testing database '$databaseName' in local.xml"
         );
     }
 
