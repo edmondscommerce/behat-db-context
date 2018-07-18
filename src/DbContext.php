@@ -126,7 +126,7 @@ class DbContext extends RawMinkContext
 
     private static function executeCustomAssertion($databaseName, $sql)
     {
-        $command = "mysql $databaseName -Ns -e '$sql'";
+        $command = "mysql $databaseName -Ns -e \"$sql\"";
 
         $output = self::executeCommand(
             $command,
@@ -153,8 +153,6 @@ class DbContext extends RawMinkContext
         if (! self::shouldImportTestingDatabase($databaseSettings)) {
             return;
         }
-
-        echo 'Importing clean testing database.';
 
         $pathToSqlDump = $databaseSettings[self::CONFIG_PATH_TO_SQL_DUMP];
         $databaseName  = $databaseSettings[self::CONFIG_DATABASE_NAME];
