@@ -54,7 +54,7 @@ class DbContext extends RawMinkContext
         );
     }
 
-    private static function assertRequiredDatabaseParametersSet(array $parameters)
+    private static function assertRequiredDatabaseParametersExist(array $parameters)
     {
         self::assertExists($parameters, self::CONFIG_DATABASE_NAME);
         self::assertExists($parameters, self::CONFIG_PATH_TO_SQL_DUMP);
@@ -203,7 +203,7 @@ class DbContext extends RawMinkContext
 
         $parameters = self::extractParameters($environment);
 
-        self::assertRequiredDatabaseParametersSet($parameters);
+        self::assertRequiredDatabaseParametersExist($parameters);
         self::assertTestingDatabaseIsBeingUsed($parameters);
 
         self::importFreshTestingDatabase($parameters);
