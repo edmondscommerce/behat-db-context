@@ -207,9 +207,9 @@ class DbContext extends RawMinkContext
         $searchPath = __DIR__;
         $platform   = null;
 
-        while ($platform === null) {
+        while (true) {
             if (self::detectMagentoOnePlatform($searchPath)) {
-                return [$platform, $searchPath];
+                return [self::PLATFORM_MAGENTO_ONE, $searchPath];
             }
 
             if (self::detectMagentoTwoPlatform($searchPath)) {
