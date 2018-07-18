@@ -19,9 +19,15 @@ class DbContext extends RawMinkContext
 
     const PATH_LOCAL_XML = '/public/app/etc/local.xml';
 
-    private static function assertParametersSectionExists(Environment $environment)
+    private static function assertDatabaseSettingsSectionExists(Environment $environment)
     {
         if ($environment->getSuite()->hasSetting(self::CONFIG_PARAMETERS)) {
+            return;
+        }
+
+        $parameters = $environment->getSuite()->getSetting(self::CONFIG_PARAMETERS);
+
+        if (isset($parameters[self::CONFIG_DATABASE_SETTINGS])) {
             return;
         }
 
@@ -30,9 +36,11 @@ class DbContext extends RawMinkContext
         );
     }
 
-    private static function extractParameters(Environment $environment)
+    private static function extractDatabaseSettings(Environment $environment)
     {
-        return $environment->getSuite()->getSetting(self::CONFIG_PARAMETERS);
+        $parameters = $environment->getSuite()->getSetting(self::CONFIG_PARAMETERS);
+
+        return $parameters[self::CONFIG_DATABASE_SETTINGS];
     }
 
     private static function shouldImportTestingDatabase(array $parameters)
@@ -55,10 +63,10 @@ class DbContext extends RawMinkContext
         );
     }
 
-    private static function assertRequiredDatabaseParametersExist(array $parameters)
+    private static function assertRequiredDatabaseParametersExist(array $databaseSettings)
     {
-        self::assertExists($parameters, self::CONFIG_DATABASE_NAME);
-        self::assertExists($parameters, self::CONFIG_PATH_TO_SQL_DUMP);
+        self::assertExists($databaseSettings, self::CONFIG_DATABASE_NAME);
+        self::assertExists($databaseSettings, self::CONFIG_PATH_TO_SQL_DUMP);
     }
 
     private static function assertSqlDumpIsReadable($pathToSqlDump)
@@ -133,16 +141,16 @@ class DbContext extends RawMinkContext
         }
     }
 
-    private static function importFreshTestingDatabase(array $parameters)
+    private static function importFreshTestingDatabase(array $databaseSettings)
     {
-        if (! self::shouldImportTestingDatabase($parameters)) {
+        if (! self::shouldImportTestingDatabase($databaseSettings)) {
             return;
         }
 
         echo 'Importing clean testing database.';
 
-        $pathToSqlDump = $parameters[self::CONFIG_PATH_TO_SQL_DUMP];
-        $databaseName  = $parameters[self::CONFIG_DATABASE_NAME];
+        $pathToSqlDump = $databaseSettings[self::CONFIG_PATH_TO_SQL_DUMP];
+        $databaseName  = $databaseSettings[self::CONFIG_DATABASE_NAME];
 
         self::assertSqlDumpIsReadable($pathToSqlDump);
 
@@ -166,9 +174,9 @@ class DbContext extends RawMinkContext
         );
     }
 
-    private static function assertTestingDatabaseIsBeingUsed(array $parameters)
+    private static function assertTestingDatabaseIsBeingUsed(array $databaseSettings)
     {
-        $databaseName                 = $parameters[self::CONFIG_DATABASE_NAME];
+        $databaseName                 = $databaseSettings[self::CONFIG_DATABASE_NAME];
         list($platform, $projectRoot) = self::detectPlatform();
 
         switch ($platform) {
@@ -222,15 +230,15 @@ class DbContext extends RawMinkContext
         throw new \RuntimeException('Failed finding project root.');
     }
 
-    public static function assertCustomAssertionsPass(array $parameters)
+    public static function assertCustomAssertionsPass(array $databaseSettings)
     {
-        if (! isset($parameters[self::CONFIG_CUSTOM_ASSERTIONS])) {
+        if (! isset($databaseSettings[self::CONFIG_CUSTOM_ASSERTIONS])) {
             return;
         }
 
-        $databaseName = $parameters[self::CONFIG_DATABASE_NAME];
+        $databaseName = $databaseSettings[self::CONFIG_DATABASE_NAME];
 
-        foreach ($parameters[self::CONFIG_CUSTOM_ASSERTIONS] as $customAssertion) {
+        foreach ($databaseSettings[self::CONFIG_CUSTOM_ASSERTIONS] as $customAssertion) {
             self::executeCustomAssertion($databaseName, $customAssertion);
         }
     }
@@ -244,15 +252,15 @@ class DbContext extends RawMinkContext
     {
         $environment = $event->getEnvironment();
 
-        self::assertParametersSectionExists($environment);
+        self::assertDatabaseSettingsSectionExists($environment);
 
-        $parameters = self::extractParameters($environment);
+        $databaseSettings = self::extractDatabaseSettings($environment);
 
-        self::assertRequiredDatabaseParametersExist($parameters);
-        self::assertTestingDatabaseIsBeingUsed($parameters);
+        self::assertRequiredDatabaseParametersExist($databaseSettings);
+        self::assertTestingDatabaseIsBeingUsed($databaseSettings);
 
-        self::importFreshTestingDatabase($parameters);
+        self::importFreshTestingDatabase($databaseSettings);
 
-        self::assertCustomAssertionsPass($parameters);
+        self::assertCustomAssertionsPass($databaseSettings);
     }
 }
