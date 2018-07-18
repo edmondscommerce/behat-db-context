@@ -97,13 +97,20 @@ class DbContext extends RawMinkContext
         return $output;
     }
 
-    private static function dropDatabase($databaseName)
+    private static function recreateDatabase($databaseName)
     {
-        $command = "mysql -e 'DROP DATABASE IF EXISTS $databaseName'";
+        $dropCommand = "mysql -e 'DROP DATABASE IF EXISTS $databaseName'";
 
         self::executeCommand(
-            $command,
+            $dropCommand,
             "An error occurred while dropping the current testing database '$databaseName':\n\n%s"
+        );
+
+        $createCommand = "mysql -e 'CREATE DATABASE $databaseName CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci'";
+
+        self::executeCommand(
+            $createCommand,
+            "An error occurred while creating the new testing database '$databaseName':\n\n%s"
         );
     }
 
@@ -154,7 +161,7 @@ class DbContext extends RawMinkContext
 
         self::assertSqlDumpIsReadable($pathToSqlDump);
 
-        self::dropDatabase($databaseName);
+        self::recreateDatabase($databaseName);
         self::importDatabase($pathToSqlDump, $databaseName);
 
         echo 'Testing database has been imported successfully.';
