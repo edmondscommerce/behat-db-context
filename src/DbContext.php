@@ -13,6 +13,7 @@ class DbContext extends RawMinkContext
     const CONFIG_IMPORT_TESTING_DATABASE = 'importTestingDatabase';
     const CONFIG_PATH_TO_SQL_DUMP        = 'pathToSqlDump';
     const CONFIG_DATABASE_NAME           = 'databaseName';
+    const CONFIG_CUSTOM_ASSERTIONS       = 'customAssertions';
 
     const PLATFORM_MAGENTO_ONE = 'magento';
 
@@ -71,10 +72,9 @@ class DbContext extends RawMinkContext
         );
     }
 
-    private static function dropDatabase($databaseName)
+    private static function executeCommand($command, $errorMsg)
     {
-        $command = "mysql -e 'DROP DATABASE IF EXISTS $databaseName'";
-        $output  = [];
+        $output = [];
 
         exec($command, $output, $status);
 
@@ -82,23 +82,53 @@ class DbContext extends RawMinkContext
             $outputString = implode("\n", $output);
 
             throw new \RuntimeException(
-                "An error occurred while dropping the current testing database '$databaseName':\n\n$outputString"
+                sprintf($errorMsg, $outputString)
             );
         }
+
+        return $output;
+    }
+
+    private static function dropDatabase($databaseName)
+    {
+        $command = "mysql -e 'DROP DATABASE IF EXISTS $databaseName'";
+
+        self::executeCommand(
+            $command,
+            "An error occurred while dropping the current testing database '$databaseName':\n\n%s"
+        );
     }
 
     private static function importDatabase($pathToSqlFile, $databaseName)
     {
         $command = "mysql $databaseName < $pathToSqlFile";
-        $output  = [];
 
-        exec($command, $output, $status);
+        self::executeCommand(
+            $command,
+            "An error occurred while importing the new testing database '$databaseName':\n\n%s"
+        );
+    }
 
-        if ($status !== 0) {
-            $outputString = implode("\n", $output);
+    private static function executeCustomAssertion($databaseName, $sql)
+    {
+        $command = "mysql $databaseName -Ns -e '$sql'";
 
+        $output = self::executeCommand(
+            $command,
+            "An error occurred while executing custom assertion '$sql':\n\n%s"
+        );
+
+        if (1 !== \count($output)) {
             throw new \RuntimeException(
-                "An error occurred while importing the new testing database '$databaseName':\n\n$outputString"
+                "Custom assertion '$sql' must use 'SELECT COUNT(*) ...'"
+            );
+        }
+
+        $count = (int) $output[0];
+
+        if (0 !== $count) {
+            throw new \RuntimeException(
+                "Custom assertion '$sql' has failed."
             );
         }
     }
@@ -185,8 +215,23 @@ class DbContext extends RawMinkContext
             $searchPath = realpath($searchPath . '/../');
 
             if ($searchPath === false) {
-                throw new \RuntimeException('Failed finding project root.');
+                break;
             }
+        }
+
+        throw new \RuntimeException('Failed finding project root.');
+    }
+
+    public static function assertCustomAssertionsPass(array $parameters)
+    {
+        if (! isset($parameters[self::CONFIG_CUSTOM_ASSERTIONS])) {
+            return;
+        }
+
+        $databaseName = $parameters[self::CONFIG_DATABASE_NAME];
+
+        foreach ($parameters[self::CONFIG_CUSTOM_ASSERTIONS] as $customAssertion) {
+            self::executeCustomAssertion($databaseName, $customAssertion);
         }
     }
 
@@ -207,5 +252,7 @@ class DbContext extends RawMinkContext
         self::assertTestingDatabaseIsBeingUsed($parameters);
 
         self::importFreshTestingDatabase($parameters);
+
+        self::assertCustomAssertionsPass($parameters);
     }
 }
