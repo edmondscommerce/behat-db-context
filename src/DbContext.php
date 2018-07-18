@@ -126,7 +126,7 @@ class DbContext extends RawMinkContext
 
         $count = (int) $output[0];
 
-        if (0 !== $count) {
+        if (1 !== $count) {
             throw new \RuntimeException(
                 "Custom assertion '$sql' has failed."
             );
