@@ -46,19 +46,19 @@ class Settings
 
     private function assertDatabaseSettingsSectionExists(Environment $environment)
     {
-        if ($environment->getSuite()->hasSetting(self::SETTING_PARAMETERS)) {
-            return;
+        if (! $environment->getSuite()->hasSetting(self::SETTING_PARAMETERS)) {
+            throw new \InvalidArgumentException(
+                "There must be a 'parameters' section of behat.yml containing your database settings."
+            );
         }
 
         $parameters = $environment->getSuite()->getSetting(self::SETTING_PARAMETERS);
 
-        if (isset($parameters[self::SETTING_DATABASE_SETTINGS])) {
-            return;
+        if (! isset($parameters[self::SETTING_DATABASE_SETTINGS])) {
+            throw new \InvalidArgumentException(
+                "There must be a 'databaseSettings' section of behat.yml containing your database settings."
+            );
         }
-
-        throw new \InvalidArgumentException(
-            'There must be a parameters section of behat.yml containing your database settings.'
-        );
     }
 
     private function extractDatabaseSettings(Environment $environment)
