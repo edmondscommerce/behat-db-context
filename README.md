@@ -75,17 +75,15 @@ For example:
 SELECT COUNT(*) FROM core_config_data WHERE path = 'web/unsecure/base_url' AND value = 'https://www.base.url.com/'
 ```
 
-### Extending the Context
-
-#### Adding Support For New Platforms
+### Adding Support For New Platforms
 
 All platform code is contained within the [Platform](src/Util/Platform.php) class. In order to extend
 this you need to provide two functions; one which handles platform detection and one which handles
 database detection.
 
-##### Platform Detection
+#### Platform Detection
 
-###### Add Detection Method
+##### Add Detection Method
 
 You need to add a method that can detect the platform from the project root. The Magento platform detection
 simply does this by looking for `local.xml`:
@@ -103,7 +101,7 @@ simply does this by looking for `local.xml`:
     // ...
 ```
 
-###### Add Method to Detect
+##### Add Method to Detect
 
 You then need to add this to the detect method:
 
@@ -144,11 +142,11 @@ And add your platform as a constant:
 // ...
 ```
 
-##### Database Detection
+#### Database Detection
 
 Now that you have platform detection in place you need to handle database configuration detection.
 
-###### Add Assertion Method
+##### Add Assertion Method
 
 You need to add a method that can assert that the platforms database is currently configured to use
 the testing database. If the platform isn't configured correctly it should throw an exception.
@@ -182,7 +180,7 @@ Here's the Magento 1 assertion for example:
     // ...
 ```
 
-###### Add Method to Assert
+##### Add Method to Assert
 
 You then need to add this platform specific assertion to the generic assertion method:
 
